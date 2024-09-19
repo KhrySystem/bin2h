@@ -186,6 +186,33 @@ InputData::InputData(const std::string _inputFilename, bool includeExtension)
     sizeName = arrayName + "_SIZE";
 }
 
+InputData::InputData(const std::string varName, const std::string _inputFilename, bool includeExtension)
+: inputFilename(_inputFilename)
+{
+    spdlog::info("open input file: {}", inputFilename);
+    std::ifstream in(inputFilename, std::ifstream::binary);
+    if (!in.is_open()) {
+        throw std::ios_base::failure(fmt::format("failed to open file \"{}\"", inputFilename));
+    }
+    in.seekg(0, in.end);
+    filesize = (size_t)in.tellg();
+    data.resize(filesize);
+    memset(data.data(), 255, data.size());
+    in.seekg(0, in.beg);
+
+    in.read(reinterpret_cast<char*>(data.data()), filesize);
+    spdlog::info("read data of file {}: {} bytes", inputFilename, data.size());
+    
+    in.close();
+
+    std::string inputDirectoryPath, inputFilePath, inputName, inputExtension;
+    std::tie(inputDirectoryPath, inputFilePath) = bin2h::getDirectoryAndFilename(inputFilename);
+    std::tie(inputName, inputExtension) = bin2h::getNameAndExtension(inputFilePath);
+
+    arrayName = varName;
+    sizeName = arrayName + "_SIZE";
+}
+
 std::pair<uint64_t, uint64_t> computeMD5(const std::vector<std::pair<void*, size_t>> messages)
 {
 	uint8_t digest[PICOHASH_MD5_DIGEST_LENGTH];

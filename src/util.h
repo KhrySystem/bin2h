@@ -41,6 +41,7 @@ struct InputData {
     std::vector<uint8_t> data;
     size_t filesize;
 
+    InputData(const std::string varName, const std::string _inputFilename, bool includeExtension);
     InputData(const std::string _inputFilename, bool includeExtension);
 };
 

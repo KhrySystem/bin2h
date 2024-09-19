@@ -24,6 +24,7 @@ int main(int argc, char** argv) {
     size_t bytePerLine = 8;
     std::vector<std::string> inputFilenames;
     std::string outputFilename;
+    std::string variableName = "";
     auto cli = (
         clipp::values("input binary files").required(true).set(inputFilenames),
         (clipp::required("-o", "--output") & clipp::value("output header file").set(outputFilename)),
@@ -31,10 +32,12 @@ int main(int argc, char** argv) {
         clipp::option("-v", "--verbose").set(verboseMode, true) % "verbose mode",
         clipp::option("-c", "--comment").set(comment, true) % "visualize binary data as a comment",
         (clipp::option("-a", "--align") & clipp::value("align byte size").set(align)) % "resulting byte array would be byte-aligned with specific size (default: 1)",
+        (clipp::option("-n", "--name") & clipp::value("variable name").set(variableName)) % "The name of the resulting array, the name of the size variable will have _SIZE appended to it. (default: file name)",
         (clipp::option("-l", "--line") & clipp::value("byte count per line").set(bytePerLine)) % "byte count per line (default: 8)",
         (clipp::option("-e", "--include-extension").set(includeExtension)) % "include input file's extension for naming array variables",
         (clipp::option("-f", "--force").set(force)) % "force to generate output, although input does not change"
     );
+
 
     auto parseResult = clipp::parse(argc, argv, cli);
     if (!parseResult || help) {
@@ -57,7 +60,10 @@ int main(int argc, char** argv) {
     try {
         spdlog::info("open input files and load binaries");
         for (auto& inputFilename: inputFilenames) {
-            inputDataList.push_back(std::make_shared<bin2h::InputData>(inputFilename, includeExtension));
+            if(variableName == "")
+                inputDataList.push_back(std::make_shared<bin2h::InputData>(inputFilename, includeExtension));
+            else
+                inputDataList.push_back(std::make_shared<bin2h::InputData>(variableName, inputFilename, includeExtension));
         }
         std::vector<bin2h::Message> messages;
         messages.reserve(inputDataList.size());
@@ -123,13 +129,11 @@ int main(int argc, char** argv) {
         std::string outputDirectoryPath, outputFilePath, outputName, outputExtension;
         std::tie(outputDirectoryPath, outputFilePath) = bin2h::getDirectoryAndFilename(outputFilename);
         std::tie(outputName, outputExtension) = bin2h::getNameAndExtension(outputFilePath);
-        std::string predefinedSymbol = bin2h::convertSymbol(outputName, bin2h::CaseNotation::upperSnakeCase) + "_H";
 
         out << fmt::format("//! MD5 checksum: {:016x}{:016x}", md5.first, md5.second) << std::endl;
         out << fmt::format("//! automatically generated header file via bin2h (https://github.com/rinthel/bin2h).") << std::endl;
         out << fmt::format("//! Please do not modify.") << std::endl;
-        out << fmt::format("#ifndef {}", predefinedSymbol) << std::endl;
-        out << fmt::format("#define {}", predefinedSymbol) << std::endl;
+        out << fmt::format("#pragma once") << std::endl;
         out << std::endl;
 
         for (auto&& inputData: inputDataList) {
@@ -164,8 +168,6 @@ int main(int argc, char** argv) {
             }
             out << "};" << std::endl << std::endl;
         }
-
-        out << fmt::format("#endif // {}", predefinedSymbol) << std::endl;
     }
     catch (std::exception& e) {
         spdlog::error("failed to process: {}", e.what());
