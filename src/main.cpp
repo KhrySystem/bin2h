@@ -131,7 +131,7 @@ int main(int argc, char** argv) {
         std::tie(outputName, outputExtension) = bin2h::getNameAndExtension(outputFilePath);
 
         out << fmt::format("//! MD5 checksum: {:016x}{:016x}", md5.first, md5.second) << std::endl;
-        out << fmt::format("//! automatically generated header file via bin2h (https://github.com/khrysys/bin2h).") << std::endl;
+        out << fmt::format("//! automatically generated header file via bin2h (https://github.com/KhrySystem/bin2h).") << std::endl;
         out << fmt::format("//! Please do not modify.") << std::endl;
         out << fmt::format("#pragma once") << std::endl;
         out << std::endl;
